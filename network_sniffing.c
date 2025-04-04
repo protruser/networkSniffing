@@ -12,14 +12,14 @@ struct Ethernet_header {
 
 /* IP header */
 struct Ip_header {
-        unsigned char iph_ihl:4; // ip header
-        unsigned char iph_ver:4; // ip version
+        unsigned char iph_ihl:4, // ip header length
+                     iph_ver:4; // ip version
         unsigned char iph_tos; // type of service
         unsigned short int iph_len; // ip packet length(data + header)
-        unsigned short iph_off; // fragment offset
-        unsigned short int iph_id; // ip identification
-        unsigned short int iph_flag:3; // Fragmentation flags
-        unsigned char iph_ttl; // time to Live
+        unsigned short int iph_ident; // identification
+        unsigned short int iph_flag:3, // fragmentation flags
+                       iph_offset:13; // flags offset
+        unsigned char iph_ttl; // time to live
         unsigned char iph_protocol; // protocol type
         unsigned short int iph_chksum; // ip datagram checksum
         struct in_addr iph_src; // source IP address
@@ -28,17 +28,18 @@ struct Ip_header {
 
 /* TCP header */
 struct Tcp_header {
-        unsigned tcph_sport; // source tcp address
-        unsigned tcph_dport; // destination tcp address
-        unsigned int tcph_seqNum; // tcp sequence number
-        unsigned int tcph_ackNum; // tcp ack number
-        unsigned int tcph_flag; // tcp control flag
-        unsigned char tcph_offsetx2:4; // tcp offet
-        unsigned char tcph_reversed:4; // reversed
-        unsigned short tcph_window; // window size
-        unsigned short tcph_chksum; // checksum
-        unsigned short tcph_urgp; // urgent pointer
+    unsigned short tcph_sport;      // source tcp port
+    unsigned short tcph_dport;      // destination tcp port
+    unsigned int tcph_seqNum;       // tcp sequence number
+    unsigned int tcph_ackNum;       // tcp ack number
+    unsigned char tcph_offsetx2:4;  // tcp offset
+    unsigned char tcph_reversed:4;  // reversed bits
+    unsigned char tcph_flags;       // tcp flags
+    unsigned short tcph_window;     // window size
+    unsigned short tcph_chksum;     // checksum
+    unsigned short tcph_urgp;       // urgent pointer
 };
+
 
 /* got_packing function */
 void got_packet(unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet)
@@ -94,10 +95,10 @@ void got_packet(unsigned char *args, const struct pcap_pkthdr *header, const uns
                         printf("TCP To: %d\n", ntohs(tcp -> tcph_dport));
                         printf("\n");
 
-                        int tcp_header_len = (tcp-> tcph_offsetx2 >> 4) * 4;
+                        int tcp_header_len = (tcp-> tcph_offsetx2) * 4;
 
                         // Message
-                        unsigned char *msg = (unsigned char *) (packet + sizeof(struct Ethernet_header) + ip_header_len + tcp_header_len);
+                        unsigned char *msg = (unsigned char *)(packet + sizeof(struct Ethernet_header) + ip_header_len + tcp_header_len);
                         unsigned int length = ip_packet_len - ip_header_len - tcp_header_len;
 
                         printf("Message: ");
